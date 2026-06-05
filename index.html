@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Focus · one step toward building agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="light"]{
+    --bg:#f4f1ea; --card:#fffdf8; --card-2:#f7f3ea;
+    --ink:#221f19; --soft:#6c685d; --faint:#a39d8f; --line:#e6dfd0;
+    --accent:#1f6f5c; --accent-ink:#16513f; --accent-soft:#dcebe4;
+    --good:#1f6f5c; --shadow:0 1px 2px rgba(40,35,20,.05),0 8px 30px rgba(40,35,20,.06);
+  }
+  :root[data-theme="dark"]{
+    --bg:#14161a; --card:#1c1f24; --card-2:#23272d;
+    --ink:#ece9e1; --soft:#9b968b; --faint:#6a655c; --line:#2b2f35;
+    --accent:#5fc7a8; --accent-ink:#8fe0c7; --accent-soft:#1f3a33;
+    --good:#5fc7a8; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 40px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Hanken Grotesk',system-ui,sans-serif;
+    font-size:17px; line-height:1.55;
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+    transition:background .3s ease,color .3s ease;
+  }
+  .app{max-width:660px;margin:0 auto;padding:0 22px 80px;min-height:100vh;display:flex;flex-direction:column}
+
+  /* header */
+  header{display:flex;align-items:center;justify-content:space-between;padding:20px 0 8px;gap:14px}
+  .logo{font-family:'Fraunces',serif;font-size:18px;font-weight:600;letter-spacing:-.2px}
+  .logo .b{color:var(--accent)}
+  .htools{display:flex;align-items:center;gap:8px}
+  .done-pill{font-size:13px;color:var(--soft);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}
+  .done-pill b{color:var(--accent);font-weight:700}
+  .iconbtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--soft);cursor:pointer;font-size:15px;display:grid;place-items:center;transition:.18s}
+  .iconbtn:hover{color:var(--ink);border-color:var(--accent)}
+
+  /* timer */
+  .timer{
+    margin:14px 0 4px;background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:16px 18px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow);flex-wrap:wrap;
+  }
+  .clock{font-family:'Fraunces',serif;font-size:40px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:1px;min-width:130px}
+  .clock.ringing{color:var(--accent);animation:pulse 1s ease infinite}
+  @keyframes pulse{50%{opacity:.45}}
+  .tcontrols{display:flex;gap:8px;flex:1;flex-wrap:wrap;align-items:center}
+  .tbtn{border:1px solid var(--line);background:var(--card-2);color:var(--ink);border-radius:10px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:.18s}
+  .tbtn:hover{border-color:var(--accent)}
+  .tbtn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  :root[data-theme="dark"] .tbtn.primary{color:#0e1714}
+  .tbtn.primary:hover{filter:brightness(1.06)}
+  .presets{display:flex;gap:5px;margin-left:auto}
+  .preset{font-size:12.5px;color:var(--soft);background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;font-family:inherit;transition:.15s}
+  .preset.on,.preset:hover{color:var(--accent);border-color:var(--accent)}
+  .timer-hint{flex-basis:100%;font-size:12.5px;color:var(--faint);margin-top:-2px}
+
+  /* focus card */
+  .focus{
+    background:var(--card);border:1px solid var(--line);border-radius:20px;
+    padding:30px 28px 26px;margin-top:14px;box-shadow:var(--shadow);
+    flex:1;display:flex;flex-direction:column;
+  }
+  .crumb{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--soft);margin-bottom:18px}
+  .crumb .wk{color:var(--accent);font-weight:700;letter-spacing:.3px}
+  .crumb .sep{color:var(--faint)}
+  .ship-tag{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:4px 9px;border-radius:6px}
+
+  .step-anim{animation:rise .32s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .step-text{font-family:'Fraunces',serif;font-size:clamp(25px,5.2vw,33px);line-height:1.22;font-weight:500;letter-spacing:-.4px}
+  .step-why{margin-top:14px;color:var(--soft);font-size:15.5px;max-width:48ch}
+  .res{
+    margin-top:20px;display:inline-flex;align-items:center;gap:11px;text-decoration:none;
+    color:var(--ink);border:1px solid var(--line);background:var(--card-2);
+    border-radius:12px;padding:11px 14px;transition:.18s;align-self:flex-start;max-width:100%;
+  }
+  .res:hover{border-color:var(--accent);transform:translateX(2px)}
+  .res .rtype{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 7px;border-radius:5px;background:var(--accent-soft);color:var(--accent-ink);white-space:nowrap}
+  .res .rt{font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .res .rx{color:var(--faint);font-size:13px}
+
+  .spacer{flex:1;min-height:18px}
+
+  .reassure{font-size:13.5px;color:var(--faint);margin:18px 0 14px;display:flex;align-items:center;gap:8px}
+  .reassure .heart{color:var(--accent)}
+
+  /* main controls */
+  .controls{display:flex;align-items:center;gap:10px}
+  .done-btn{
+    flex:1;background:var(--accent);color:#fff;border:none;border-radius:14px;
+    padding:17px 20px;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit;
+    transition:.18s;display:flex;align-items:center;justify-content:center;gap:9px;
+  }
+  :root[data-theme="dark"] .done-btn{color:#0e1714}
+  .done-btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+  .done-btn:active{transform:translateY(0)}
+  .ghost{background:transparent;border:1px solid var(--line);color:var(--soft);border-radius:14px;padding:17px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:.18s;white-space:nowrap}
+  .ghost:hover{color:var(--ink);border-color:var(--soft)}
+  .ghost:disabled{opacity:.35;cursor:default}
+
+  /* finale */
+  .finale{text-align:center;padding:24px 0;display:none}
+  .finale.show{display:block;animation:rise .4s ease both}
+  .finale h2{font-family:'Fraunces',serif;font-size:34px;font-weight:600;letter-spacing:-.5px}
+  .finale p{color:var(--soft);margin-top:12px;max-width:42ch;margin-inline:auto}
+
+  /* collapsibles */
+  .panel{margin-top:16px}
+  .panel summary{
+    list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;
+    font-size:14px;font-weight:600;color:var(--soft);padding:12px 16px;
+    background:var(--card);border:1px solid var(--line);border-radius:12px;transition:.18s;
+  }
+  .panel summary::-webkit-details-marker{display:none}
+  .panel summary:hover{color:var(--ink)}
+  .panel summary .tw{margin-left:auto;color:var(--faint);font-size:12px;transition:transform .2s}
+  .panel[open] summary .tw{transform:rotate(90deg)}
+  .panel .body{border:1px solid var(--line);border-top:none;border-radius:0 0 12px 12px;background:var(--card);padding:6px 16px 16px;margin-top:-4px}
+
+  textarea{
+    width:100%;min-height:120px;resize:vertical;margin-top:10px;
+    background:var(--card-2);border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;font-family:inherit;font-size:15px;color:var(--ink);line-height:1.5;
+  }
+  textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+  .dump-hint{font-size:12.5px;color:var(--faint);margin-top:8px}
+
+  /* map */
+  .map-week{margin-top:14px}
+  .map-week:first-child{margin-top:6px}
+  .mw-head{font-size:12.5px;font-weight:700;letter-spacing:.3px;color:var(--accent);text-transform:uppercase;margin-bottom:7px}
+  .map-step{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--soft);padding:6px 0;cursor:pointer;border-radius:8px}
+  .map-step:hover{color:var(--ink)}
+  .map-step .box{width:17px;height:17px;border:1.5px solid var(--faint);border-radius:5px;flex-shrink:0;margin-top:2px;display:grid;place-items:center;font-size:11px;color:#fff}
+  .map-step.done .box{background:var(--accent);border-color:var(--accent)}
+  .map-step.current{color:var(--ink);font-weight:600}
+  .map-step.current .box{border-color:var(--accent)}
+  .map-step.done .label{color:var(--faint);text-decoration:line-through}
+
+  footer{margin-top:24px;font-size:13px;color:var(--faint);text-align:center;line-height:1.5}
+  footer b{color:var(--soft);font-weight:600}
+
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media(max-width:560px){
+    .clock{font-size:34px;min-width:104px}
+    .step-text{font-size:24px}
+    .controls{flex-wrap:wrap}
+    .done-btn{order:-1;flex-basis:100%}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">one step<span class="b">.</span></div>
+    <div class="htools">
+      <span class="done-pill">done: <b id="doneN">0</b></span>
+      <button class="iconbtn" id="themeBtn" title="Toggle calm dark / light" aria-label="Toggle theme">☾</button>
+    </div>
+  </header>
+
+  <!-- TIMER -->
+  <section class="timer" aria-label="Focus timer">
+    <div class="clock" id="clock">25:00</div>
+    <div class="tcontrols">
+      <button class="tbtn primary" id="startBtn">Start</button>
+      <button class="tbtn" id="resetBtn">Reset</button>
+      <div class="presets" role="group" aria-label="Timer length">
+        <button class="preset" data-min="10">10</button>
+        <button class="preset on" data-min="25">25</button>
+        <button class="preset" data-min="50">50</button>
+      </div>
+      <div class="timer-hint">Work until it rings. Then actually stop and breathe. The break is part of the method.</div>
+    </div>
+  </section>
+
+  <!-- FOCUS CARD -->
+  <section class="focus">
+    <div id="liveCard">
+      <div class="crumb">
+        <span class="wk" id="wkLabel">Week 0</span>
+        <span class="sep">·</span>
+        <span id="stepCount">step 1 of 5</span>
+        <span class="ship-tag" style="margin-left:auto">do this now</span>
+      </div>
+      <div id="stepBody">
+        <div class="step-text" id="stepText"></div>
+        <div class="step-why" id="stepWhy"></div>
+        <a class="res" id="stepRes" target="_blank" rel="noopener" style="display:none">
+          <span class="rtype" id="resType">video</span>
+          <span class="rt" id="resTitle"></span>
+          <span class="rx">↗</span>
+        </a>
+      </div>
+      <div class="spacer"></div>
+      <div class="reassure"><span class="heart">●</span> <span>Feels too big? Just start the first 2 minutes. Starting counts. Mark it done.</span></div>
+      <div class="controls">
+        <button class="ghost" id="backBtn" title="Previous step">← back</button>
+        <button class="done-btn" id="doneBtn">Done ✓ &nbsp;next step</button>
+        <button class="ghost" id="skipBtn" title="Park this, come back later">skip</button>
+      </div>
+    </div>
+
+    <div class="finale" id="finale">
+      <h2>You shipped the whole thing.</h2>
+      <p>Forty small steps, one real agent, deployed and used. That is not a tutorial you watched. That is a thing you built. Go find a harder problem.</p>
+      <div style="margin-top:22px"><button class="tbtn" id="restartBtn">Start over</button></div>
+    </div>
+  </section>
+
+  <!-- BRAIN DUMP -->
+  <details class="panel">
+    <summary>🧠 Park a thought <span class="tw">▸</span></summary>
+    <div class="body">
+      <textarea id="dump" placeholder="Dump the distracting thought here so it stops nagging you, then get back to the step.
+e.g. reply to Sam · buy oats · check that error later"></textarea>
+      <div class="dump-hint">Saved automatically on this device. Empties nothing on its own. Clear it when you have dealt with things.</div>
+    </div>
+  </details>
+
+  <!-- MAP -->
+  <details class="panel" id="mapPanel">
+    <summary>🗺️ Show the whole map (only when you want the big picture) <span class="tw">▸</span></summary>
+    <div class="body" id="mapBody"></div>
+  </details>
+
+  <footer>
+    Built to do one job: make the next step small enough that starting is easy.<br>
+    <b>Not a place to live. Open it, do one step, close it.</b> Progress saves on this device only.
+  </footer>
+
+</div>
+
+<script>
+/* ---------- curriculum: weeks -> tiny startable steps ---------- */
+const WEEKS = [
+  { name:"Week 0 · can you code?", steps:[
+    {t:"Open a blank file and name it check.py.", why:"The whole goal of this week is one honest test. Start with the easiest possible move."},
+    {t:"Write a function that adds two numbers, then run it.", why:"If this is slow, that is the real bottleneck, not agents."},
+    {t:"Write a for-loop that prints 1 to 5.", why:"Loops are the literal heart of an agent. You will write one for real in Week 3."},
+    {t:"Make one real API call to any free API and print the response.", why:"Talking to an API is 90% of talking to an LLM."},
+    {t:"Pull one field out of that JSON response and print just that.", why:"If all 5 felt easy, skip to Week 1. If not, watch the video below first.",
+      res:{type:"video", title:"Python to Autonomous Agents (freeCodeCamp)", url:"https://www.freecodecamp.org/news/learn-python-and-build-autonomous-agents/"}},
+  ]},
+  { name:"Week 1 · raw primitives", steps:[
+    {t:"Get a free LLM API key and save it as an environment variable.", why:"No frameworks this week. Just you and the API."},
+    {t:"Write a script that sends one hardcoded message and prints the reply.", why:"This single call is what every agent is built on top of.",
+      res:{type:"video", title:"Build an AI Coding Agent · first API call (freeCodeCamp)", url:"https://www.freecodecamp.org/news/build-an-ai-coding-agent-with-python-and-gemini/"}},
+    {t:"Wrap it in a while-loop so you can chat in the terminal.", why:"Now it is a conversation, not a single shot."},
+    {t:"Add a system prompt. Change temperature. Watch the output shift.", why:"Touch the knobs so they stop being mysterious words."},
+    {t:"Store the conversation in a list so it remembers the last few messages.", why:"This is memory in its simplest honest form."},
+  ]},
+  { name:"Week 2 · tool use", steps:[
+    {t:"Write a plain function add(a, b). No AI involved yet.", why:"You are about to hand this to the model. Keep it boring."},
+    {t:"Describe that function to the model as a tool (its name and inputs).", why:"The model needs a menu before it can order.",
+      res:{type:"code", title:"Anthropic Cookbook · agent patterns", url:"https://github.com/anthropics/anthropic-cookbook/tree/main/patterns/agents"}},
+    {t:"Get the model to ASK to call the tool. Print what it asks for.", why:"Key insight: the model does not run your code. It requests. You run it."},
+    {t:"Run the function with the model's arguments, feed the result back, print the final answer.", why:"That round trip is the entire mechanic of tool use."},
+    {t:"Swap the calculator for a real web search tool.", why:"Same loop, more useful. Now it can reach the world."},
+  ]},
+  { name:"Week 3 · the loop (the spine)", steps:[
+    {t:"On paper, draw: reason → act → observe → repeat. Take a photo.", why:"Cheap, physical, sticks better than any slide."},
+    {t:"Write the while-loop skeleton: ask model, check for tool request, run it, repeat.", why:"This is the backbone of everything. Build it by hand once and you own it.",
+      res:{type:"course", title:"Agentic AI by Andrew Ng (DeepLearning.AI, free)", url:"https://learn.deeplearning.ai/courses/agentic-ai"}},
+    {t:"Give the loop two tools: search and read.", why:"Two is enough to feel real coordination."},
+    {t:"Point it at one task: research one topic and summarize it.", why:"A concrete job beats an abstract framework every time."},
+    {t:"Add a stop condition so the agent ends when the task is done.", why:"An agent that cannot stop is a bug with ambition."},
+  ]},
+  { name:"Week 4 · memory & retrieval", steps:[
+    {t:"Save the conversation to a file. Reload it on the next run.", why:"Memory across sessions, the simplest version."},
+    {t:"When history gets long, summarize the old part and keep the summary.", why:"This is how agents survive a finite context window."},
+    {t:"Install a vector database and store five text chunks in it.", why:"Small on purpose. You want to see it work, not drown.",
+      res:{type:"video", title:"Build Agentic AI Workflows · memory (freeCodeCamp)", url:"https://www.freecodecamp.org/news/how-to-build-agentic-ai-workflows/"}},
+    {t:"Retrieve the most relevant chunk for a question.", why:"This is RAG, demystified to one function call."},
+    {t:"Feed that retrieved chunk into the prompt and answer from it.", why:"Watch it answer using your data, not its training."},
+  ]},
+  { name:"Week 5 · one framework", steps:[
+    {t:"Install LangGraph and run their hello-world example.", why:"Now, and only now, after you built the raw version yourself.",
+      res:{type:"course", title:"AI Agents in LangGraph by Harrison Chase (free)", url:"https://www.deeplearning.ai/courses/ai-agents-in-langgraph"}},
+    {t:"Recreate just the loop from Week 3 inside the framework.", why:"Same idea, new scaffolding. Notice what disappears."},
+    {t:"Add your two tools as framework tools.", why:"See how it wires what you wired by hand."},
+    {t:"Get the same research task working as before.", why:"Parity proves you understand both versions."},
+    {t:"Write three sentences: what did the framework save, what did it hide?", why:"This reflection is the actual point of the whole week."},
+  ]},
+  { name:"Week 6 · make it reliable", steps:[
+    {t:"Write five test inputs your agent should handle correctly.", why:"You cannot fix what you refuse to measure."},
+    {t:"Run all five. Write down pass or fail for each, plainly.", why:"This honest little table is your first real signal.",
+      res:{type:"read", title:"Building Effective Agents (Anthropic) · measure & iterate", url:"https://www.anthropic.com/engineering/building-effective-agents"}},
+    {t:"Add a retry when a tool call errors out.", why:"Real tools fail. Your agent should expect it."},
+    {t:"Validate the output format before you trust it.", why:"Never let a malformed answer flow downstream silently."},
+    {t:"Run the agent 50 times on one hard input. Count the failures.", why:"That number is the most honest thing your agent has told you yet."},
+  ]},
+  { name:"Week 7 · connect to the world (MCP)", steps:[
+    {t:"Read the Model Context Protocol getting-started page.", why:"MCP is the standard plug for agents into real tools.",
+      res:{type:"docs", title:"Model Context Protocol · getting started", url:"https://modelcontextprotocol.io/docs/getting-started/intro"}},
+    {t:"Run one existing MCP server locally.", why:"Use someone else's first. Don't build from zero."},
+    {t:"Connect your agent to that server.", why:"The handshake is the lesson."},
+    {t:"Call one real external tool through it.", why:"Now your agent reaches beyond your script."},
+    {t:"Optional: split work across two agents. Then ask if it actually helped.", why:"Usually it doesn't. Justify the second agent or delete it."},
+  ]},
+  { name:"Week 8 · ship one real thing", steps:[
+    {t:"Pick the smallest real task one real person actually has.", why:"Real user, real task. No imaginary scope."},
+    {t:"Log every action your agent takes to a file.", why:"Engineers live in the logs. Demos never have them.",
+      res:{type:"video", title:"How to Build Advanced AI Agents · real apps (freeCodeCamp)", url:"https://www.freecodecamp.org/news/how-to-build-advanced-ai-agents/"}},
+    {t:"Deploy it somewhere it runs without your laptop open.", why:"If it dies when you close the lid, it is not shipped."},
+    {t:"Hand it to that one person and watch them use it.", why:"Watching beats asking. You will see the truth."},
+    {t:"Write down the first failure you did not predict.", why:"That single sentence is the most valuable hour of all eight weeks."},
+  ]},
+];
+
+/* flatten */
+const FLAT=[]; WEEKS.forEach((w,wi)=>w.steps.forEach((s,si)=>FLAT.push({...s,wi,si,wName:w.name,wTotal:w.steps.length})));
+const TOTAL=FLAT.length;
+
+/* ---------- safe storage (works locally, no-ops in sandbox) ---------- */
+const KEY='oneStep.agents.v1';
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+let s0=load();
+let state={ i: s0.i||0, done: s0.done||{}, dump: s0.dump||'', theme: s0.theme||'light' };
+
+/* ---------- theme ---------- */
+const root=document.documentElement, themeBtn=document.getElementById('themeBtn');
+function applyTheme(){root.setAttribute('data-theme',state.theme);themeBtn.textContent=state.theme==='dark'?'☀':'☾';}
+themeBtn.onclick=()=>{state.theme=state.theme==='dark'?'light':'dark';applyTheme();save();};
+applyTheme();
+
+/* ---------- render focus ---------- */
+const el=id=>document.getElementById(id);
+function doneCount(){return Object.values(state.done).filter(Boolean).length;}
+function render(){
+  el('doneN').textContent=doneCount();
+  const live=el('liveCard'), fin=el('finale');
+  if(state.i>=TOTAL){live.style.display='none';fin.classList.add('show');buildMap();save();return;}
+  live.style.display='';fin.classList.remove('show');
+  const st=FLAT[state.i];
+  el('wkLabel').textContent=st.wName.split(' · ')[0];
+  el('stepCount').textContent='step '+(st.si+1)+' of '+st.wTotal+' · '+st.wName.split(' · ')[1];
+  const body=el('stepBody'); body.classList.remove('step-anim'); void body.offsetWidth; body.classList.add('step-anim');
+  el('stepText').textContent=st.t;
+  el('stepWhy').textContent=st.why||'';
+  const r=el('stepRes');
+  if(st.res){r.style.display='inline-flex';r.href=st.res.url;el('resType').textContent=st.res.type;el('resTitle').textContent=st.res.title;}
+  else r.style.display='none';
+  el('backBtn').disabled=state.i===0;
+  buildMap();save();
+}
+el('doneBtn').onclick=()=>{state.done[state.i]=true;state.i++;render();};
+el('skipBtn').onclick=()=>{if(state.i<TOTAL-1){state.i++;render();}};
+el('backBtn').onclick=()=>{if(state.i>0){state.i--;render();}};
+el('restartBtn').onclick=()=>{state.i=0;state.done={};render();};
+
+/* keyboard: arrows when not typing */
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='TEXTAREA')return;
+  if(e.key==='ArrowRight'){el('doneBtn').click();}
+  if(e.key==='ArrowLeft'){el('backBtn').click();}
+});
+
+/* ---------- map ---------- */
+function buildMap(){
+  const box=el('mapBody'); box.innerHTML='';
+  let idx=0;
+  WEEKS.forEach(w=>{
+    const wd=document.createElement('div');wd.className='map-week';
+    const h=document.createElement('div');h.className='mw-head';h.textContent=w.name;wd.appendChild(h);
+    w.steps.forEach(st=>{
+      const myIdx=idx++;
+      const row=document.createElement('div');row.className='map-step';
+      if(state.done[myIdx])row.classList.add('done');
+      if(myIdx===state.i)row.classList.add('current');
+      row.innerHTML='<span class="box">'+(state.done[myIdx]?'✓':'')+'</span><span class="label">'+st.t+'</span>';
+      row.onclick=()=>{state.i=myIdx;render();const mp=el('mapPanel');if(mp)mp.open=false;window.scrollTo({top:0,behavior:'smooth'});};
+      wd.appendChild(row);
+    });
+    box.appendChild(wd);
+  });
+}
+
+/* ---------- brain dump ---------- */
+const dump=el('dump'); dump.value=state.dump;
+dump.addEventListener('input',()=>{state.dump=dump.value;save();});
+
+/* ---------- timer ---------- */
+let mins=25, remaining=25*60, ticking=false, iv=null, ac=null;
+const clock=el('clock'), startBtn=el('startBtn');
+function fmt(s){const m=Math.floor(s/60),x=s%60;return (m<10?'0':'')+m+':'+(x<10?'0':'')+x;}
+function paint(){clock.textContent=fmt(remaining);}
+function setMin(m){mins=m;remaining=m*60;ticking=false;clearInterval(iv);startBtn.textContent='Start';clock.classList.remove('ringing');paint();
+  document.querySelectorAll('.preset').forEach(p=>p.classList.toggle('on',+p.dataset.min===m));}
+document.querySelectorAll('.preset').forEach(p=>p.onclick=()=>setMin(+p.dataset.min));
+el('resetBtn').onclick=()=>setMin(mins);
+function chime(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.frequency.value=660;g.gain.setValueAtTime(.0001,ac.currentTime);g.gain.exponentialRampToValueAtTime(.25,ac.currentTime+.05);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+1.1);o.start();o.stop(ac.currentTime+1.15);}catch(e){}}
+startBtn.onclick=()=>{
+  try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  if(ticking){ticking=false;clearInterval(iv);startBtn.textContent='Start';return;}
+  ticking=true;startBtn.textContent='Pause';clock.classList.remove('ringing');
+  iv=setInterval(()=>{
+    remaining--;paint();
+    if(remaining<=0){clearInterval(iv);ticking=false;startBtn.textContent='Start';clock.classList.add('ringing');clock.textContent='break';chime();}
+  },1000);
+};
+paint();
+
+render();
+</script>
+</body>
+</html>
